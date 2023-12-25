@@ -1,6 +1,4 @@
-<### Script written by Aravind 
-Send your feedbacks to apcmakkadath@gmail.com
-####>
+
 
 set /p scrip=scrip:
 echo %scrip%
