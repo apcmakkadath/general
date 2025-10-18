@@ -1,0 +1,86 @@
+# Show folder sizes in a tree-like format
+[CmdletBinding()]
+param(
+    [Parameter(Mandatory = $true)]
+    [string]$Path,
+
+    [Parameter(Mandatory = $true)]
+    [int]$Depth
+)
+
+Function Check-RunAsAdministrator {
+  #Get current user context
+  $CurrentUser = New-Object Security.Principal.WindowsPrincipal $([Security.Principal.WindowsIdentity]::GetCurrent())
+  
+  #Check user is running the script is member of Administrator Group
+  if($CurrentUser.IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator))
+  {
+       Write-host "Script is running with Administrator privileges!"
+  }
+  else
+    {
+       #Create a new Elevated process to Start PowerShell
+       $ElevatedProcess = New-Object System.Diagnostics.ProcessStartInfo "PowerShell";
+ 
+       # Specify the current script path and name as a parameter
+       $ElevatedProcess.Arguments = "& '" + $script:MyInvocation.MyCommand.Path + "'"
+ 
+       #Set the Process to elevated
+       $ElevatedProcess.Verb = "runas"
+ 
+       #Start the new elevated process
+       [System.Diagnostics.Process]::Start($ElevatedProcess)
+ 
+       #Exit from the current, unelevated, process
+       Exit
+ 
+    }
+}
+ 
+#Check Script is running with Elevated Privileges
+Check-RunAsAdministrator
+
+function Get-FolderSizeTree {
+    param(
+        [string]$FolderPath,
+        [int]$Level,
+        [int]$MaxDepth
+    )
+
+    try {
+        # Collect all files under the folder (silently ignore access errors)
+        $items = Get-ChildItem -LiteralPath $FolderPath -Recurse -ErrorAction SilentlyContinue | 
+                 Where-Object { -not $_.PSIsContainer }
+
+        if ($items) {
+            $size = ($items | Measure-Object -Property Length -Sum).Sum
+            $displaySize = if ($size -gt 1GB) {
+                "{0:N2} GB" -f ($size / 1GB)
+            } elseif ($size -gt 1MB) {
+                "{0:N2} MB" -f ($size / 1MB)
+            } elseif ($size -gt 1KB) {
+                "{0:N0} KB" -f ($size / 1KB)
+            } else {
+                "0 KB"
+            }
+        } else {
+            $displaySize = "unable to retrieve"
+        }
+    }
+    catch {
+        $displaySize = "unable to retrieve"
+    }
+
+    # Print folder line
+    Write-Host (" " * ($Level * 2) + "├─ " + (Split-Path $FolderPath -Leaf) + " : " + $displaySize)
+
+    # Recurse into subdirectories
+    if ($Level -lt $MaxDepth) {
+        Get-ChildItem -LiteralPath $FolderPath -Directory -ErrorAction SilentlyContinue | ForEach-Object {
+            Get-FolderSizeTree -FolderPath $_.FullName -Level ($Level + 1) -MaxDepth $MaxDepth
+        }
+    }
+}
+
+Write-Host "`n📁 Directory Size Tree for: $Path`n"
+Get-FolderSizeTree -FolderPath (Resolve-Path $Path) -Level 0 -MaxDepth $Depth
