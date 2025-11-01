@@ -1,13 +1,5 @@
 # Show folder sizes in a tree-like format
-[CmdletBinding()]
-param(
-    [Parameter(Mandatory = $true)]
-    [string]$Path,
-
-    [Parameter(Mandatory = $true)]
-    [int]$Depth
-)
-
+Clear-Host
 Function Check-RunAsAdministrator {
   #Get current user context
   $CurrentUser = New-Object Security.Principal.WindowsPrincipal $([Security.Principal.WindowsIdentity]::GetCurrent())
@@ -15,7 +7,7 @@ Function Check-RunAsAdministrator {
   #Check user is running the script is member of Administrator Group
   if($CurrentUser.IsInRole([Security.Principal.WindowsBuiltinRole]::Administrator))
   {
-       Write-host "Script is running with Administrator privileges!"
+       Write-host "Script is running with Administrator privileges!" -ForegroundColor DarkGreen
   }
   else
     {
@@ -36,10 +28,7 @@ Function Check-RunAsAdministrator {
  
     }
 }
- 
-#Check Script is running with Elevated Privileges
-Check-RunAsAdministrator
-
+Check-RunAsAdministrator 
 function Get-FolderSizeTree {
     param(
         [string]$FolderPath,
@@ -72,7 +61,7 @@ function Get-FolderSizeTree {
     }
 
     # Print folder line
-    Write-Host (" " * ($Level * 2) + "├─ " + (Split-Path $FolderPath -Leaf) + " : " + $displaySize)
+    Write-Host (" " * ($Level * 2) + "├─ " + (Split-Path $FolderPath -Leaf) + " : " + $displaySize) -ForegroundColor DarkMagenta
 
     # Recurse into subdirectories
     if ($Level -lt $MaxDepth) {
@@ -80,7 +69,32 @@ function Get-FolderSizeTree {
             Get-FolderSizeTree -FolderPath $_.FullName -Level ($Level + 1) -MaxDepth $MaxDepth
         }
     }
+    
 }
 
+function Check-Dir{
+
+        if (Test-Path $Path)
+        {
+            Write-Host "$Path is a valid path" -ForegroundColor Green
+            $Depth = Read-Host "Directory depth to check?"
+            RunTreeSize
+        }else{
+        Write-Host "Check the path and try again" -ForegroundColor Red
+        }
+}
+
+
+function RunTreeSize{
 Write-Host "`n📁 Directory Size Tree for: $Path`n"
 Get-FolderSizeTree -FolderPath (Resolve-Path $Path) -Level 0 -MaxDepth $Depth
+Pause
+}
+
+### Start
+$TryAgain = "Y"
+While ($TryAgain -eq "y" -or $choice -eq "Y"){
+$Path = Read-Host "Full path to find directory size?"
+Check-Dir
+$TryAgain = Read-Host "Try Again?[y/n]"
+}
