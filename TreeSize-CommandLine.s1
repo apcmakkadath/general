@@ -61,7 +61,7 @@ function Get-FolderSizeTree {
     }
 
     # Print folder line
-    Write-Host (" " * ($Level * 2) + "├─ " + (Split-Path $FolderPath -Leaf) + " : " + $displaySize) -ForegroundColor DarkMagenta
+    Write-Host (" " * ($Level * 2) + "├─ " + (Split-Path $FolderPath -Leaf) + " : " + $displaySize) -ForegroundColor Yellow
 
     # Recurse into subdirectories
     if ($Level -lt $MaxDepth) {
